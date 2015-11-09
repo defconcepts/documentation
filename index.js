@@ -46,6 +46,20 @@ function noop(comment) {
 }
 
 /**
+ * Given an array of indexes and options for whether to resolve shallow
+ * or deep dependencies, resolve dependencies.
+ *
+ * @param {Array<string>|string} indexes files to process
+ * @param {Object} options options
+ * @param {Function} callback called with results
+ * @returns {undefined}
+ */
+function expandInputs(indexes, options, callback) {
+  var inputFn = (options.polyglot || options.shallow) ? shallow : dependency;
+  inputFn(indexes, options, callback);
+}
+
+/**
  * Generate JavaScript documentation as a list of parsed JSDoc
  * comments, given a root file as a path.
  *
@@ -75,10 +89,9 @@ module.exports = function (indexes, options, callback) {
     indexes = [indexes];
   }
 
-  var inputFn = (options.polyglot || options.shallow) ? shallow : dependency;
   var parseFn = (options.polyglot) ? polyglot : parseJavaScript;
 
-  return inputFn(indexes, options, function (error, inputs) {
+  return expandInputs(indexes, options, function (error, inputs) {
     if (error) {
       return callback(error);
     }
@@ -110,6 +123,8 @@ module.exports = function (indexes, options, callback) {
     }
   });
 };
+
+module.exports.expandInputs = expandInputs;
 
 module.exports.formats = {
   html: require('./lib/output/html'),

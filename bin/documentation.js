@@ -5,19 +5,32 @@
 'use strict';
 
 var documentation = require('../'),
+  chokidar = require('chokidar'),
+  debounce = require('debounce'),
   streamArray = require('stream-array'),
   fs = require('fs'),
   vfs = require('vinyl-fs'),
+  errorPage = require('../lib/error_page'),
   lint = require('../lib/lint'),
-  args = require('../lib/args.js');
+  Server = require('../lib/server'),
+  args = require('../lib/args');
 
 var parsedArgs = args(process.argv.slice(2)),
-  formatterOptions = parsedArgs.formatterOptions,
-  outputLocation = parsedArgs.output,
-  formatter = documentation.formats[parsedArgs.formatter];
+  servingHTML = parsedArgs.serve && parsedArgs.formatter === 'html';
 
-documentation(parsedArgs.inputs, parsedArgs.options, function (err, comments) {
+var generator = documentation.bind(null,
+  parsedArgs.inputs, parsedArgs.options, onDocumented.bind(null, parsedArgs));
+
+var server = new Server();
+server.on('listening', function () {
+  process.stdout.write('documentation.js serving on port 4001\n');
+});
+
+function onDocumented(parsedArgs, err, comments) {
   if (err) {
+    if (servingHTML) {
+      return server.setFiles([errorPage(err)]).start();
+    }
     throw err;
   }
 
@@ -31,15 +44,42 @@ documentation(parsedArgs.inputs, parsedArgs.options, function (err, comments) {
     }
   }
 
-  formatter(comments, formatterOptions, function (err, output) {
-    if (outputLocation !== 'stdout') {
-      if (parsedArgs.formatter === 'html') {
-        streamArray(output).pipe(vfs.dest(outputLocation));
-      } else {
-        fs.writeFileSync(outputLocation, output);
-      }
+  documentation.formats[parsedArgs.formatter](
+    comments, parsedArgs.formatterOptions,
+    onFormatted.bind(null, parsedArgs));
+}
+
+function onFormatted(parsedArgs, err, output) {
+  var destination = parsedArgs.output;
+  if (destination !== 'stdout') {
+    if (parsedArgs.formatter === 'html') {
+      streamArray(output)
+        .pipe(vfs.dest(destination));
     } else {
-      process.stdout.write(output);
+      fs.writeFileSync(destination, output);
     }
+  } else if (parsedArgs.formatter !== 'html') {
+    process.stdout.write(output);
+  }
+  if (parsedArgs.formatter === 'html' && parsedArgs.serve) {
+    server.setFiles(output).start();
+  }
+  if (parsedArgs.watch) {
+    updateWatcher();
+  }
+}
+
+if (parsedArgs.watch) {
+  var watcher = chokidar.watch(parsedArgs.inputs);
+  watcher.on('all', debounce(generator, 300));
+} else {
+  generator();
+}
+
+function updateWatcher() {
+  documentation.expandInputs(parsedArgs.inputs, parsedArgs.options, function (err, files) {
+    watcher.add(files.map(function (data) {
+      return data.file;
+    }));
   });
-});
+}

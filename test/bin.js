@@ -94,6 +94,13 @@ test('bad -f option', function (t) {
   });
 }, options);
 
+test('both --watch and --lint', function (t) {
+  documentation(['--watch --lint fixture/internal.input.js'], function (err) {
+    t.ok(err, 'returns error');
+    t.end();
+  });
+}, options);
+
 test('--version', function (t) {
   documentation(['--version'], {}, function (err, output) {
     t.ok(output, 'outputs version');
