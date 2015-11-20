@@ -61,7 +61,7 @@ function onFormatted(parsedArgs, err, output) {
   } else if (Array.isArray(output)) {
     streamArray(output).pipe(vfs.dest(parsedArgs.output));
   } else {
-    output.pipe(fs.createWriteStream(parsedArgs.output));
+    fs.writeFileSync(parsedArgs.output, output);
   }
 }
 
