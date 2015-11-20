@@ -50,22 +50,18 @@ function onDocumented(parsedArgs, err, comments) {
 }
 
 function onFormatted(parsedArgs, err, output) {
-  var destination = parsedArgs.output;
-  if (destination !== 'stdout') {
-    if (parsedArgs.formatter === 'html') {
-      streamArray(output)
-        .pipe(vfs.dest(destination));
-    } else {
-      fs.writeFileSync(destination, output);
-    }
-  } else if (parsedArgs.formatter !== 'html') {
-    process.stdout.write(output);
-  }
-  if (parsedArgs.formatter === 'html' && parsedArgs.serve) {
-    server.setFiles(output).start();
-  }
   if (parsedArgs.watch) {
     updateWatcher();
+  }
+
+  if (parsedArgs.command === 'serve') {
+    server.setFiles(output).start();
+  } else if (parsedArgs.output === 'stdout') {
+    output.pipe(process.stdout, { end: false });
+  } else if (Array.isArray(output)) {
+    streamArray(output).pipe(vfs.dest(parsedArgs.output));
+  } else {
+    output.pipe(fs.createWriteStream(parsedArgs.output));
   }
 }
 
