@@ -42,7 +42,7 @@ test('harness', function (t) {
 }, options);
 
 test('provides index.html', function (t) {
-  var docProcess = documentation(['fixture/simple.input.js', '--serve', '-f', 'html']);
+  var docProcess = documentation(['serve', 'fixture/simple.input.js']);
   docProcess.stdout.on('data', function (data) {
     t.equal(data.toString().trim(), 'documentation.js serving on port 4001', 'shows listening message');
     get('http://localhost:4001/', function (text) {
@@ -56,7 +56,7 @@ test('provides index.html', function (t) {
 test('--watch', function (t) {
   var tmpFile = path.join(os.tmpdir(), '/simple.js');
   fs.writeFileSync(tmpFile, '/** a function */function apples() {}');
-  var docProcess = documentation([tmpFile, '--serve', '-f', 'html', '--watch']);
+  var docProcess = documentation(['serve', tmpFile, '--watch']);
   docProcess.stdout.on('data', function (data) {
     get('http://localhost:4001/', function (text) {
       t.ok(text.match(/apples/), 'sends an html index file');
@@ -78,7 +78,7 @@ test('--watch', function (t) {
   var b = path.join(tmpDir, '/required.js');
   fs.writeFileSync(a, 'require("./required")');
   fs.writeFileSync(b, '/** soup */function soup() {}');
-  var docProcess = documentation([a, '--serve', '-f', 'html', '--watch']);
+  var docProcess = documentation(['serve', a, '--watch']);
   docProcess.stdout.on('data', function (data) {
     get('http://localhost:4001/', function (text) {
       t.ok(text.match(/soup/), 'sends an html index file');
@@ -98,7 +98,7 @@ test('error page', function (t) {
   var tmpDir = os.tmpdir();
   var a = path.join(tmpDir, '/simple.js');
   fs.writeFileSync(a, '**');
-  var docProcess = documentation([a, '--serve', '-f', 'html', '--watch']);
+  var docProcess = documentation(['serve', a, '--watch']);
   docProcess.stdout.on('data', function (data) {
     get('http://localhost:4001/', function (text) {
       t.ok(text.match(/Unexpected token/), 'emits an error page');

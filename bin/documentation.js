@@ -15,8 +15,7 @@ var documentation = require('../'),
   Server = require('../lib/server'),
   args = require('../lib/args');
 
-var parsedArgs = args(process.argv.slice(2)),
-  servingHTML = parsedArgs.serve && parsedArgs.formatter === 'html';
+var parsedArgs = args(process.argv.slice(2));
 
 var generator = documentation.bind(null,
   parsedArgs.inputs, parsedArgs.options, onDocumented.bind(null, parsedArgs));
@@ -28,7 +27,7 @@ server.on('listening', function () {
 
 function onDocumented(parsedArgs, err, comments) {
   if (err) {
-    if (servingHTML) {
+    if (parsedArgs.command === 'serve') {
       return server.setFiles([errorPage(err)]).start();
     }
     throw err;
@@ -73,9 +72,11 @@ if (parsedArgs.watch) {
 }
 
 function updateWatcher() {
-  documentation.expandInputs(parsedArgs.inputs, parsedArgs.options, function (err, files) {
-    watcher.add(files.map(function (data) {
-      return data.file;
-    }));
-  });
+  documentation.expandInputs(parsedArgs.inputs, parsedArgs.options, addNewFiles);
+}
+
+function addNewFiles(err, files) {
+  watcher.add(files.map(function (data) {
+    return data.file;
+  }));
 }
