@@ -34,7 +34,7 @@ function onDocumented(parsedArgs, err, comments) {
     throw err;
   }
 
-  if (parsedArgs.options.lint) {
+  if (parsedArgs.command === 'lint') {
     var lintOutput = lint.format(comments);
     if (lintOutput) {
       console.log(lintOutput);
